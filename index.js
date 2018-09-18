@@ -5,13 +5,23 @@ const createHtmlElement = require('create-html-element');
 const urlRegex = () => (/((?:https?(?::\/\/))(?:www\.)?(?:[a-zA-Z\d-_.]+(?:\.[a-zA-Z\d]{2,})|localhost)(?:(?:[-a-zA-Z\d:%_+.~#!?&//=@]*)(?:[,](?![\s]))*)*)/g);
 
 // Get <a> element as string
-const linkify = (href, options) => createHtmlElement({
-	name: 'a',
-	attributes: Object.assign({href: ''}, options.attributes, {href}),
-	text: typeof options.value === 'undefined' ? href : undefined,
-	html: typeof options.value === 'undefined' ? undefined :
-		(typeof options.value === 'function' ? options.value(href) : options.value)
-});
+const linkify = (href, options) => {
+	let linkAttr = options.linkAttr;
+	let name = options.elName;
+	let baseAttributes = {};
+	let text = typeof options.value === 'undefined' ? href : undefined;
+	let html = typeof options.value === 'undefined' ? undefined : (typeof options.value === 'function' ? options.value(href) : options.value);
+
+	baseAttributes[linkAttr] = href;
+
+	if (options.hrefFilter && typeof options.hrefFilter === 'function') {
+		baseAttributes[linkAttr] = options.hrefFilter(href);
+	}
+
+	let attributes = Object.assign({}, options.attributes, baseAttributes);
+
+	return createHtmlElement({ name, attributes, text, html });
+}
 
 // Get DOM node from HTML
 const domify = html => document.createRange().createContextualFragment(html);
@@ -35,6 +45,9 @@ const getAsDocumentFragment = (input, options) => {
 module.exports = (input, options) => {
 	options = Object.assign({
 		attributes: {},
+		elName: 'a',
+		linkAttr: 'href',
+		hrefFilter: null,
 		type: 'string'
 	}, options);
 
